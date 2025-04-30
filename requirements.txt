@@ -89,7 +89,6 @@ parso==0.8.4
 pathlib==1.0.1
 patsy==0.5.6
 pickleshare==0.7.5
-pipreqs==0.5.0
 pkginfo==1.10.0
 platformdirs==4.2.1
 priority==2.0.0
