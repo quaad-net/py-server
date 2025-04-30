@@ -4,8 +4,10 @@ ConfigParser==7.2.0
 contextlib2==21.6.0
 cryptography==42.0.5
 dj_database_url==2.1.0
+Django==5.0.1
 docutils==0.21.2
 filelock==3.18.0
+gunicorn==21.2.0
 HTMLParser==0.0.2
 importlib_metadata==7.1.0
 ipdb==0.13.13
@@ -14,6 +16,7 @@ ipywidgets==8.1.6
 isort==6.0.1
 keyring==25.1.0
 mock==5.2.0
+mssql-django==1.4
 numpy==2.2.5
 pandas==2.2.3
 Pillow==11.2.1
@@ -22,6 +25,8 @@ psycopg==3.2.6
 psycopg2_binary==2.9.9
 psycopg_pool==3.2.6
 pymemcache==4.0.0
+pymssql==2.2.11
+pyodbc==5.1.0
 pyOpenSSL==25.0.0
 python-dotenv==1.1.0
 pywatchman==2.0.0
