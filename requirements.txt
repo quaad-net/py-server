@@ -5,7 +5,7 @@ Django==5.2
 dotenv==0.9
 gunicorn==22.0.0
 mssql-django==1.4
-packaging==25.0s
+packaging==25.0
 pandas==2.2.1
 pathlib==1.0.1
 pymssql==2.2.11
