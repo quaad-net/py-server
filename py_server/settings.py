@@ -16,8 +16,6 @@ import secrets
 from pathlib import Path
 import dj_database_url
 from dotenv import load_dotenv
-
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # dotenv
@@ -39,7 +37,6 @@ if not IS_HEROKU_APP:
 
 ALLOWED_HOSTS = ["*"]
 
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -52,7 +49,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'py_app.apps.PyAppConfig',
-    'fiscal.apps.FiscalConfig'
+    'fiscal.apps.FiscalConfig',
 ]
 
 MIDDLEWARE = [

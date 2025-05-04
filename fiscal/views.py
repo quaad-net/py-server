@@ -17,37 +17,48 @@ else:
     engine = db.create_engine(f"mssql+pymssql://{os.environ.get('UQNT_USER')}:{os.environ.get('UQNT_PASS')}@{os.environ.get('UQNT_SERVER')}:1433/{os.environ.get('UQNT_DB')}")
 
 def uwm_fs_expend(request, range):
-    
-    cnxn = engine.connect()
-    records = []
-    department_codes = {
-        '026808': 'Facility_Repair',
-        '026403': 'Mechanicals',
-        '026804': 'Stores',
-        '026909': 'Electrical_Elevator_Inventory',
-        '026404': 'Plumbing',
-        '026805': 'Grounds',
-        '026911': 'Stores_Inventory',
-        '026809': 'Preventive_Maintenance',
-        '026806': 'Garage_Services',
-        '026400': 'Carpenters',
-        '026401': 'Electricians',
-        '026803': 'Custodial_Services',
-        '026807': 'A_E_Services',
-        '026402': 'Painters',
-    }
+        
+        rangeReq = int(range)
+        match rangeReq:
+            case 30:
+                pass
+            case 60:
+                pass
+            case 90:
+                pass
+            case _:
+                raise Exception()
 
-    query = f"select sum((Ordered) * (Unit_Cost)) as uwm_fs_{range}_day_ttl from uwm_purchaseHist12Mo where Order_date > dateadd(dd, -{int(range)+1}, current_date);"
-    query_df = pd.read_sql(query, cnxn)
-    query_jsn = query_df.to_json(orient='records')
-    records.append(query_jsn)
+        cnxn = engine.connect()
+        records = []
+        department_codes = {
+            '026808': 'Facility_Repair',
+            '026403': 'Mechanicals',
+            '026804': 'Stores',
+            '026909': 'Electrical_Elevator_Inventory',
+            '026404': 'Plumbing',
+            '026805': 'Grounds',
+            '026911': 'Stores_Inventory',
+            '026809': 'Preventive_Maintenance',
+            '026806': 'Garage_Services',
+            '026400': 'Carpenters',
+            '026401': 'Electricians',
+            '026803': 'Custodial_Services',
+            '026807': 'A_E_Services',
+            '026402': 'Painters',
+        }
 
-    for key, val in department_codes.items():
-        query = f"select sum((Ordered) * (Unit_Cost)) as {val} from uwm_purchaseHist12Mo where Department_Code = {key} and Order_date > dateadd(dd, -{int(range)+1}, current_date)"
+        query = f"select sum((Ordered) * (Unit_Cost)) as uwm_fs_{range}_day_ttl from uwm_purchaseHist12Mo where Order_date > dateadd(dd, -{int(range)+1}, current_date);"
         query_df = pd.read_sql(query, cnxn)
         query_jsn = query_df.to_json(orient='records')
         records.append(query_jsn)
 
-    cnxn.close()
+        for key, val in department_codes.items():
+            query = f"select sum((Ordered) * (Unit_Cost)) as {val} from uwm_purchaseHist12Mo where Department_Code = {key} and Order_date > dateadd(dd, -{int(range)+1}, current_date)"
+            query_df = pd.read_sql(query, cnxn)
+            query_jsn = query_df.to_json(orient='records')
+            records.append(query_jsn)
 
-    return JsonResponse(records, safe=False)
+        cnxn.close()
+        return JsonResponse(records, safe=False)
+    

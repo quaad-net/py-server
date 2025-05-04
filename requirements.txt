@@ -1,13 +1,13 @@
 asgiref==3.8.1
 Brotli==1.1.0
 dj-database-url==2.3.0
-Django==5.0.14
+Django==5.2
+dotenv==0.9
 gunicorn==22.0.0
 mssql-django==1.4
-packaging==25.0
+packaging==25.0s
 pandas==2.2.1
 pathlib==1.0.1
-psycopg2-binary==2.9.9
 pymssql==2.2.11
 pyodbc==5.1.0
 python-dotenv==1.0.1
