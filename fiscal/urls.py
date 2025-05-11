@@ -7,5 +7,6 @@ from django.urls import path, include, re_path
 from django.views.static import serve
 
 urlpatterns = [
+    path('uwm-fs-expend/monthly-totals-with-prev-yr/', views.uwm_fs_expend_monthly_totals_with_prev_yr),
     re_path(r'uwm-fs-expend/range=(?P<range>\d+)/', views.uwm_fs_expend),
 ]
