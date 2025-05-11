@@ -2,7 +2,7 @@ asgiref==3.8.1
 Brotli==1.1.0
 dj-database-url==2.3.0
 Django==5.2
-dotenv==0.9
+dotenv
 gunicorn==22.0.0
 mssql-django==1.4
 packaging==25.0
