@@ -19,7 +19,8 @@ else:
 
 def uwm_fs_expend(request, range):
         
-        # try:
+        try:
+            
             rangeReq = int(range)
             match rangeReq:
                 case 30:
@@ -90,22 +91,28 @@ def uwm_fs_expend(request, range):
             
             cnxn.close()
             return JsonResponse(records, safe=False)
-        # except Exception as e:
-        #     cnxn.close()
-        #     print(e)
-        #     return HttpResponse('Cou')
+        except:
+            cnxn.close()
+            data = {'message': 'unable to complete operation'}
+            return JsonResponse(data, status=500)
 
 def uwm_fs_expend_monthly_totals_with_prev_yr(request):
 
-    cnxn = engine.connect()
+    try:
+        cnxn = engine.connect()
 
-    current_year  = 'select * from uwm_purchaseHist12Mo_ttls'
-    current_year_df = pd.read_sql(current_year, cnxn)
-    current_year_jsn = current_year_df.to_json(orient='records')
+        current_year  = 'select * from uwm_purchaseHist12Mo_ttls'
+        current_year_df = pd.read_sql(current_year, cnxn)
+        current_year_jsn = current_year_df.to_json(orient='records')
 
-    prev_yr = 'select * from uwm_purchaseHist_prev_12Mo_ttls'
-    prev_yr_df = pd.read_sql(prev_yr, cnxn)
-    prev_yr_df_jsn = prev_yr_df.to_json(orient='records')
+        prev_yr = 'select * from uwm_purchaseHist_prev_12Mo_ttls'
+        prev_yr_df = pd.read_sql(prev_yr, cnxn)
+        prev_yr_df_jsn = prev_yr_df.to_json(orient='records')
 
-    cnxn.close()
-    return JsonResponse([current_year_jsn, prev_yr_df_jsn], safe=False)
+        cnxn.close()
+        return JsonResponse([current_year_jsn, prev_yr_df_jsn], safe=False)
+    
+    except:
+        cnxn.close()
+        data = {'message': 'unable to complete operation'}
+        return JsonResponse(data, status=500)
