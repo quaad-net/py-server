@@ -8,5 +8,7 @@ from django.views.static import serve
 
 urlpatterns = [
     path('uwm-fs-expend/monthly-totals-with-prev-yr/', views.uwm_fs_expend_monthly_totals_with_prev_yr),
+    re_path(r'get-dataset/(?P<table>\w+)', views.get_dataset),
     re_path(r'uwm-fs-expend/range=(?P<range>\d+)/', views.uwm_fs_expend),
+    re_path(r'uwm-fs-expend/month=(?P<month>\d+)&year=(?P<year>\d+)/', views.uwm_fs_expend_month),
 ]

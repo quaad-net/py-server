@@ -1,4 +1,4 @@
-from django.http import JsonResponse, HttpResponse
+from django.http import JsonResponse, HttpResponse, FileResponse
 from django.shortcuts import render, redirect
 from dotenv import load_dotenv
 import json
@@ -95,6 +95,65 @@ def uwm_fs_expend(request, range):
             cnxn.close()
             data = {'message': 'unable to complete operation'}
             return JsonResponse(data, status=500)
+        
+def uwm_fs_expend_month(request, month, year):
+        
+        try:
+            mo = int(month)
+            yr = int(year)
+
+            if mo == 0: 
+                mo = 'month(order_date)'
+                yr = 'year(order_date)'
+
+            cnxn = engine.connect()
+            records = []
+            department_codes = {
+                '026808': 'Facility_Repair',
+                '026403': 'Mechanicals',
+                '026804': 'Stores',
+                '026909': 'Electrical_Elevator_Inventory',
+                '026404': 'Plumbing',
+                '026805': 'Grounds',
+                '026911': 'Stores_Inventory',
+                '026809': 'Preventive_Maintenance',
+                '026806': 'Garage_Services',
+                '026400': 'Carpenters',
+                '026401': 'Electricians',
+                '026803': 'Custodial_Services',
+                '026807': 'A_E_Services',
+                '026402': 'Painters',
+            }
+            # Total costs for each dept...specific month of most recent 12 months.
+            where_cont = f"year(order_date) = {yr} and month(order_date) = {mo}"
+            dept_totals_latest_12_mo = []
+            for key, val in department_codes.items():
+                query_1 = f"select sum((Ordered) * (Unit_Cost)) as {val} from uwm_purchaseHist12Mo where Department_Code = {key} and {where_cont}"
+                query_1_df = pd.read_sql(query_1, cnxn)
+                query_1_jsn = query_1_df.to_json(orient='records')
+                dept_totals_latest_12_mo.append(query_1_jsn)
+            records.append(json.dumps([{"dept_totals_latest_12_mo": dept_totals_latest_12_mo}]))
+
+            # Total costs for each dept...specific month of earlier 12 month period.
+            where_cont_2 = ''
+            if mo == 'month(order_date)':
+                where_cont_2 = f"year(order_date) = {yr} and month(order_date) = {mo}"
+            else:
+                where_cont_2 = f"year(order_date) = {yr - 1} and month(order_date) = {mo}"
+            dept_totals_earlier_12_mo = []
+            for key, val in department_codes.items():
+                query_2 = f"select sum((Ordered) * (Unit_Cost)) as {val} from uwm_purchaseHistLt732Gt365 where Department_Code = {key} and {where_cont_2}"
+                query_2_df = pd.read_sql(query_2, cnxn)
+                query_2_jsn = query_2_df.to_json(orient='records')
+                dept_totals_earlier_12_mo.append(query_2_jsn)
+            records.append(json.dumps([{"dept_totals_earlier_12_mo": dept_totals_earlier_12_mo}]))
+            
+            cnxn.close()
+            return JsonResponse(records, safe=False)
+        except:
+            cnxn.close()
+            data = {'message': 'unable to complete operation'}
+            return JsonResponse(data, status=500)
 
 def uwm_fs_expend_monthly_totals_with_prev_yr(request):
 
@@ -112,7 +171,24 @@ def uwm_fs_expend_monthly_totals_with_prev_yr(request):
         cnxn.close()
         return JsonResponse([current_year_jsn, prev_yr_df_jsn], safe=False)
     
-    except:
+    except Exception as e:
         cnxn.close()
+        print(e)
+        data = {'message': 'unable to complete operation'}
+        return JsonResponse(data, status=500)
+
+def get_dataset(request, table):
+
+    try:
+        print(table)
+        cnxn = engine.connect()
+        query = f"select * from {table}"
+        query_df = pd.read_sql(query, cnxn)
+        query_jsn = query_df.to_json(orient='records')
+        return JsonResponse(query_jsn, safe=False)
+
+    except Exception as e:
+        cnxn.close()
+        print(e)
         data = {'message': 'unable to complete operation'}
         return JsonResponse(data, status=500)
