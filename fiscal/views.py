@@ -17,7 +17,24 @@ else:
     load_dotenv(env_path)
     engine = db.create_engine(f"mssql+pymssql://{os.environ.get('UQNT_USER')}:{os.environ.get('UQNT_PASS')}@{os.environ.get('UQNT_SERVER')}:1433/{os.environ.get('UQNT_DB')}")
 
-def uwm_fs_expend(request, range):
+department_codes = {
+    '026808': 'Facility_Repair',
+    '026403': 'Mechanicals',
+    '026804': 'Stores',
+    '026909': 'Electrical_Elevator_Inventory',
+    '026404': 'Plumbing',
+    '026805': 'Grounds',
+    '026911': 'Stores_Inventory',
+    '026809': 'Preventive_Maintenance',
+    '026806': 'Garage_Services',
+    '026400': 'Carpenters',
+    '026401': 'Electricians',
+    '026803': 'Custodial_Services',
+    '026807': 'A_E_Services',
+    '026402': 'Painters',
+}
+
+def expend(request, range):
         
         try:
             
@@ -36,22 +53,6 @@ def uwm_fs_expend(request, range):
 
             cnxn = engine.connect()
             records = []
-            department_codes = {
-                '026808': 'Facility_Repair',
-                '026403': 'Mechanicals',
-                '026804': 'Stores',
-                '026909': 'Electrical_Elevator_Inventory',
-                '026404': 'Plumbing',
-                '026805': 'Grounds',
-                '026911': 'Stores_Inventory',
-                '026809': 'Preventive_Maintenance',
-                '026806': 'Garage_Services',
-                '026400': 'Carpenters',
-                '026401': 'Electricians',
-                '026803': 'Custodial_Services',
-                '026807': 'A_E_Services',
-                '026402': 'Painters',
-            }
 
             # Total costs including all depts...most recent 12 months.
             # -{int(range)+1} => explanation: if range = 30, Order_date  > today - 31 days. 
@@ -96,70 +97,101 @@ def uwm_fs_expend(request, range):
             data = {'message': 'unable to complete operation'}
             return JsonResponse(data, status=500)
         
-def uwm_fs_expend_month(request, month, year):
+def expend_month(request, month, year):
         
-        try:
-            mo = int(month)
-            yr = int(year)
+    try:
+        mo = int(month)
+        yr = int(year)
 
-            if mo == 0: 
-                mo = 'month(order_date)'
-                yr = 'year(order_date)'
+        if mo == 0: 
+            mo = 'month(order_date)'
+            yr = 'year(order_date)'
 
-            cnxn = engine.connect()
-            records = []
-            department_codes = {
-                '026808': 'Facility_Repair',
-                '026403': 'Mechanicals',
-                '026804': 'Stores',
-                '026909': 'Electrical_Elevator_Inventory',
-                '026404': 'Plumbing',
-                '026805': 'Grounds',
-                '026911': 'Stores_Inventory',
-                '026809': 'Preventive_Maintenance',
-                '026806': 'Garage_Services',
-                '026400': 'Carpenters',
-                '026401': 'Electricians',
-                '026803': 'Custodial_Services',
-                '026807': 'A_E_Services',
-                '026402': 'Painters',
-            }
-            # Total costs for each dept...specific month of most recent 12 months.
-            where_cont = f"year(order_date) = {yr} and month(order_date) = {mo}"
-            dept_totals_latest_12_mo = []
-            for key, val in department_codes.items():
-                query_1 = f"select sum((Ordered) * (Unit_Cost)) as {val} from uwm_purchaseHist12Mo where Department_Code = {key} and {where_cont}"
-                query_1_df = pd.read_sql(query_1, cnxn)
-                query_1_jsn = query_1_df.to_json(orient='records')
-                dept_totals_latest_12_mo.append(query_1_jsn)
-            records.append(json.dumps([{"dept_totals_latest_12_mo": dept_totals_latest_12_mo}]))
+        cnxn = engine.connect()
+        records = []
 
-            # Total costs for each dept...specific month of earlier 12 month period.
-            where_cont_2 = ''
-            if mo == 'month(order_date)':
-                where_cont_2 = f"year(order_date) = {yr} and month(order_date) = {mo}"
-            else:
-                where_cont_2 = f"year(order_date) = {yr - 1} and month(order_date) = {mo}"
-            dept_totals_earlier_12_mo = []
-            for key, val in department_codes.items():
-                query_2 = f"select sum((Ordered) * (Unit_Cost)) as {val} from uwm_purchaseHistLt732Gt365 where Department_Code = {key} and {where_cont_2}"
-                query_2_df = pd.read_sql(query_2, cnxn)
-                query_2_jsn = query_2_df.to_json(orient='records')
-                dept_totals_earlier_12_mo.append(query_2_jsn)
-            records.append(json.dumps([{"dept_totals_earlier_12_mo": dept_totals_earlier_12_mo}]))
-            
-            cnxn.close()
-            return JsonResponse(records, safe=False)
-        except:
-            cnxn.close()
-            data = {'message': 'unable to complete operation'}
-            return JsonResponse(data, status=500)
+        # Total costs for each dept...specific month of most recent 12 months.
+        where_cont = f"year(order_date) = {yr} and month(order_date) = {mo}"
+        dept_totals_latest_12_mo = []
+        for key, val in department_codes.items():
+            query_1 = f"select sum((Ordered) * (Unit_Cost)) as {val} from uwm_purchaseHist12Mo where Department_Code = {key} and {where_cont}"
+            query_1_df = pd.read_sql(query_1, cnxn)
+            query_1_jsn = query_1_df.to_json(orient='records')
+            dept_totals_latest_12_mo.append(query_1_jsn)
+        records.append(json.dumps([{"dept_totals_latest_12_mo": dept_totals_latest_12_mo}]))
 
-def uwm_fs_expend_monthly_totals_with_prev_yr(request):
+        # Total costs for each dept...specific month of earlier 12 month period.
+        where_cont_2 = ''
+        if mo == 'month(order_date)':
+            where_cont_2 = f"year(order_date) = {yr} and month(order_date) = {mo}"
+        else:
+            where_cont_2 = f"year(order_date) = {yr - 1} and month(order_date) = {mo}"
+        dept_totals_earlier_12_mo = []
+        for key, val in department_codes.items():
+            query_2 = f"select sum((Ordered) * (Unit_Cost)) as {val} from uwm_purchaseHistLt732Gt365 where Department_Code = {key} and {where_cont_2}"
+            query_2_df = pd.read_sql(query_2, cnxn)
+            query_2_jsn = query_2_df.to_json(orient='records')
+            dept_totals_earlier_12_mo.append(query_2_jsn)
+        records.append(json.dumps([{"dept_totals_earlier_12_mo": dept_totals_earlier_12_mo}]))
+        
+        cnxn.close()
+        return JsonResponse(records, safe=False)
+    except:
+        cnxn.close()
+        data = {'message': 'unable to complete operation'}
+        return JsonResponse(data, status=500)
+        
+def expend_month_mod(request, month, year, perct_mod, sign):
+        
+    try:
+        mo = int(month)
+        yr = int(year)
 
+        if mo == 0: 
+            mo = 'month(order_date)'
+            yr = 'year(order_date)'
+
+        perct_mod =  float(perct_mod)
+        if sign  == 'neg':
+            perct_mod *= (-1)
+
+        cnxn = engine.connect()
+        records = []
+
+        # Total costs for each dept...specific month of most recent 12 months.
+        where_cont = f"year(order_date) = {yr} and month(order_date) = {mo}"
+        dept_totals_latest_12_mo = []
+        for key, val in department_codes.items():
+            query_1 = f"select(select sum((Ordered) * (Unit_Cost)) * {perct_mod} from uwm_purchaseHist12Mo where Department_Code = {key} and {where_cont}) + (select sum((Ordered) * (Unit_Cost)) from uwm_purchaseHist12Mo where Department_Code = {key} and {where_cont}) as {val}"
+            query_1_df = pd.read_sql(query_1, cnxn)
+            query_1_jsn = query_1_df.to_json(orient='records')
+            dept_totals_latest_12_mo.append(query_1_jsn)
+        records.append(json.dumps([{"dept_totals_latest_12_mo": dept_totals_latest_12_mo}]))
+
+        # Total costs for each dept...specific month of earlier 12 month period.
+        where_cont_2 = ''
+        if mo == 'month(order_date)':
+            where_cont_2 = f"year(order_date) = {yr} and month(order_date) = {mo}"
+        else:
+            where_cont_2 = f"year(order_date) = {yr - 1} and month(order_date) = {mo}"
+        dept_totals_earlier_12_mo = []
+        for key, val in department_codes.items():
+            query_2 = f"select(select sum((Ordered) * (Unit_Cost)) * {perct_mod} from uwm_purchaseHistLt732Gt365 where Department_Code = {key} and {where_cont_2}) + (select sum((Ordered) * (Unit_Cost)) from uwm_purchaseHistLt732Gt365 where Department_Code = {key} and {where_cont_2}) as {val}"
+            query_2_df = pd.read_sql(query_2, cnxn)
+            query_2_jsn = query_2_df.to_json(orient='records')
+            dept_totals_earlier_12_mo.append(query_2_jsn)
+        records.append(json.dumps([{"dept_totals_earlier_12_mo": dept_totals_earlier_12_mo}]))
+        
+        cnxn.close()
+        return JsonResponse(records, safe=False)
+    except:
+        cnxn.close()
+        data = {'message': 'unable to complete operation'}
+        return JsonResponse(data, status=500)
+
+def monthly_totals(request):
     try:
         cnxn = engine.connect()
-
         current_year  = 'select * from uwm_purchaseHist12Mo_ttls'
         current_year_df = pd.read_sql(current_year, cnxn)
         current_year_jsn = current_year_df.to_json(orient='records')
@@ -176,17 +208,38 @@ def uwm_fs_expend_monthly_totals_with_prev_yr(request):
         print(e)
         data = {'message': 'unable to complete operation'}
         return JsonResponse(data, status=500)
+    
+def monthly_totals_mod(request, perct_mod, sign):
+    try:
+        cnxn = engine.connect()
+        perct_mod =  float(perct_mod)
+        if sign  == 'neg':
+            perct_mod *= (-1)
+
+        # Calculates new/adjusted totals with percentage modification param.
+        current_year  = f"select(sum(total_cost) * {perct_mod}) + sum(total_cost) as monthly_total, moYr from mod_uwm_purchaseHist12Mo group by moYr"
+        current_year_df = pd.read_sql(current_year, cnxn)
+        current_year_jsn = current_year_df.to_json(orient='records')
+
+        prev_yr = f"select(sum(total_cost) * {perct_mod}) + sum(total_cost) as monthly_total, moYr from mod_uwm_purchaseHistLt732Gt365 group by moYr"
+        prev_yr_df = pd.read_sql(prev_yr, cnxn)
+        prev_yr_df_jsn = prev_yr_df.to_json(orient='records')
+
+        cnxn.close()
+        return JsonResponse([current_year_jsn, prev_yr_df_jsn], safe=False)
+    except Exception as e:
+        cnxn.close()
+        print(e)
+        data = {'message': 'unable to complete operation'}
+        return JsonResponse(data, status=500)
 
 def get_dataset(request, table):
-
     try:
-        print(table)
         cnxn = engine.connect()
         query = f"select * from {table}"
         query_df = pd.read_sql(query, cnxn)
         query_jsn = query_df.to_json(orient='records')
         return JsonResponse(query_jsn, safe=False)
-
     except Exception as e:
         cnxn.close()
         print(e)

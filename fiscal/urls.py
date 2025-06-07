@@ -7,8 +7,10 @@ from django.urls import path, include, re_path
 from django.views.static import serve
 
 urlpatterns = [
-    path('uwm-fs-expend/monthly-totals-with-prev-yr/', views.uwm_fs_expend_monthly_totals_with_prev_yr),
+    path('uwm-fs-expend/monthlyTtls/', views.monthly_totals),
+    re_path(r'uwm-fs-expend/monthlyTtlsPerctMod=(?P<perct_mod>\d+(\.\d+)?)-(?P<sign>\w+)/', views.monthly_totals_mod),
     re_path(r'get-dataset/(?P<table>\w+)', views.get_dataset),
-    re_path(r'uwm-fs-expend/range=(?P<range>\d+)/', views.uwm_fs_expend),
-    re_path(r'uwm-fs-expend/month=(?P<month>\d+)&year=(?P<year>\d+)/', views.uwm_fs_expend_month),
+    re_path(r'uwm-fs-expend/range=(?P<range>\d+)/', views.expend),
+    re_path(r'uwm-fs-expend/month=(?P<month>\d+)&year=(?P<year>\d+)/', views.expend_month),
+    re_path(r'uwm-fs-expend/perct-mod-month=(?P<month>\d+)&year=(?P<year>\d+)&perctMod=(?P<perct_mod>\d+(\.\d+)?)-(?P<sign>\w+)/', views.expend_month_mod),
 ]
