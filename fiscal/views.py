@@ -1,3 +1,4 @@
+from datetime import date
 from django.http import JsonResponse, HttpResponse, FileResponse
 from django.shortcuts import render, redirect
 from dotenv import load_dotenv
@@ -17,6 +18,7 @@ else:
     load_dotenv(env_path)
     engine = db.create_engine(f"mssql+pymssql://{os.environ.get('UQNT_USER')}:{os.environ.get('UQNT_PASS')}@{os.environ.get('UQNT_SERVER')}:1433/{os.environ.get('UQNT_DB')}")
 
+cur_mo = date.today().month
 department_codes = {
     '026808': 'Facility_Repair',
     '026403': 'Mechanicals',
@@ -111,7 +113,11 @@ def expend_month(request, month, year):
         records = []
 
         # Total costs for each dept...specific month of most recent 12 months.
-        where_cont = f"year(order_date) = {yr} and month(order_date) = {mo}"
+        where_cont = ''
+        if mo == 'month(order_date)':
+            where_cont = f"year(order_date) = {yr} and month(order_date) != {cur_mo}"
+        else:
+            where_cont = f"year(order_date) = {yr} and month(order_date) = {mo}"
         dept_totals_latest_12_mo = []
         for key, val in department_codes.items():
             query_1 = f"select sum((Ordered) * (Unit_Cost)) as {val} from uwm_purchaseHist12Mo where Department_Code = {key} and {where_cont}"
@@ -123,7 +129,7 @@ def expend_month(request, month, year):
         # Total costs for each dept...specific month of earlier 12 month period.
         where_cont_2 = ''
         if mo == 'month(order_date)':
-            where_cont_2 = f"year(order_date) = {yr} and month(order_date) = {mo}"
+            where_cont_2 = f"year(order_date) = {yr} and month(order_date) != {cur_mo}"
         else:
             where_cont_2 = f"year(order_date) = {yr - 1} and month(order_date) = {mo}"
         dept_totals_earlier_12_mo = []
@@ -159,7 +165,11 @@ def expend_month_mod(request, month, year, perct_mod, sign):
         records = []
 
         # Total costs for each dept...specific month of most recent 12 months.
-        where_cont = f"year(order_date) = {yr} and month(order_date) = {mo}"
+        where_cont = ''
+        if mo == 'month(order_date)':
+            where_cont = f"year(order_date) = {yr} and month(order_date) != {cur_mo}"
+        else:
+            where_cont = f"year(order_date) = {yr} and month(order_date) = {mo}"
         dept_totals_latest_12_mo = []
         for key, val in department_codes.items():
             query_1 = f"select(select sum((Ordered) * (Unit_Cost)) * {perct_mod} from uwm_purchaseHist12Mo where Department_Code = {key} and {where_cont}) + (select sum((Ordered) * (Unit_Cost)) from uwm_purchaseHist12Mo where Department_Code = {key} and {where_cont}) as {val}"
@@ -171,7 +181,7 @@ def expend_month_mod(request, month, year, perct_mod, sign):
         # Total costs for each dept...specific month of earlier 12 month period.
         where_cont_2 = ''
         if mo == 'month(order_date)':
-            where_cont_2 = f"year(order_date) = {yr} and month(order_date) = {mo}"
+            where_cont_2 = f"year(order_date) = {yr} and month(order_date) != {cur_mo}"
         else:
             where_cont_2 = f"year(order_date) = {yr - 1} and month(order_date) = {mo}"
         dept_totals_earlier_12_mo = []
