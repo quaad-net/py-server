@@ -8,6 +8,7 @@ from django.views.static import serve
 
 urlpatterns = [
     path('uwm-fs-expend/purchase-freq/', views.get_purchase_freq),
+    path('uwm-fs-expend/purchase-historical-records/', views.get_purchase_historical_records),
     path('uwm-fs-expend/monthlyTtls/', views.monthly_totals),
     re_path(r'get-dataset/(?P<table>\w+)', views.get_dataset),
     re_path(r'uwm-fs-expend/range=(?P<range>\d+)/', views.expend),

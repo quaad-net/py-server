@@ -225,10 +225,26 @@ def get_dataset(request, table):
 def get_purchase_freq(request):
     try:
         cnxn = engine.connect()
-        query = f"select count (*) as total, PO_Item_Code from uwm_purchaseHist12Mo where PO_Item_Code not like '%tool' group by PO_Item_Code order by total desc;"
+        query = f"select count (*) as total, PO_Item_Code from uwm_purchaseHist12Mo where PO_Item_Code like '%-%' group by PO_Item_Code order by total desc;"
         query_df = pd.read_sql(query, cnxn)
+
+        # Gets the change in the unit cost of each item using the two most recent costs.
+        for i in range(20):
+            item_code = query_df['PO_Item_Code'][i]
+            most_recent_qry = f"SELECT TOP 1 Unit_Cost from uwm_purchaseHist12Mo where Order_Date = (SELECT MAX(Order_Date) FROM uwm_purchaseHist12Mo WHERE PO_Item_Code = '{item_code}') AND PO_Item_Code = '{item_code}';"
+            second_most = f"SELECT TOP 1 Unit_Cost from uwm_purchaseHist12Mo where Order_Date = ((SELECT MAX(Order_Date) AS SecondHighest FROM uwm_purchaseHist12Mo WHERE Order_Date < "
+            second_most_cont = f"(SELECT MAX(Order_Date) FROM uwm_purchaseHist12Mo WHERE PO_Item_Code = '{item_code}') and PO_Item_Code = '{item_code}')) and PO_Item_Code = '{item_code}';"
+            second_most_qry = second_most + second_most_cont
+            most_recent_df = pd.read_sql(most_recent_qry, cnxn)
+            second_most_df = pd.read_sql(second_most_qry, cnxn)
+            query_df.loc[i, 'Price_Chg'] = (most_recent_df['Unit_Cost'][0] / second_most_df['Unit_Cost'][0] ) - 1
+        # Keep only top 20 records.
+        for k in range(20, len(query_df)):
+            query_df.drop(index=k, inplace=True)
+
         query_jsn = query_df.to_json(orient='records')
         return JsonResponse(query_jsn, safe=False)
+
     except Exception as e:
         cnxn.close()
         data = {'message': 'unable to complete operation'}
@@ -243,7 +259,18 @@ def get_purchase_hist(request, item_code):
         return JsonResponse(query_jsn, safe=False)
     except Exception as e:
         cnxn.close()
-        print(e)
+        data = {'message': 'unable to complete operation'}
+        return JsonResponse(data, status=500)
+    
+def get_purchase_historical_records(request):
+    try:
+        cnxn = engine.connect()
+        query = f"select sum((Ordered) * (Unit_Cost)) as ttl, YEAR(Order_Date) as year from uwm_purchaseHist10Yr group by YEAR(Order_Date) order by year;"
+        query_df = pd.read_sql(query, cnxn)
+        query_jsn = query_df.to_json(orient='records')
+        return JsonResponse(query_jsn, safe=False)
+    except Exception as e:
+        cnxn.close()
         data = {'message': 'unable to complete operation'}
         return JsonResponse(data, status=500)
 
